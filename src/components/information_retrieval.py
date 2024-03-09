@@ -4,6 +4,7 @@
 import utilities
 from typing import Any
 from openai import OpenAI
+from pinecone import Pinecone
 
 class InformationRetrieval(object):
     def __init__(self) -> None:
@@ -19,6 +20,9 @@ class InformationRetrieval(object):
         raise NotImplementedError("Don't call the interface directly.")
     
     def delete(self) -> Any:
+        raise NotImplementedError("Don't call the interface directly.")
+    
+    def query(self) -> Any:
         raise NotImplementedError("Don't call the interface directly.")
 
 class EmbeddingModel(object):
@@ -39,9 +43,10 @@ class PersonalIndex(InformationRetrieval):
         super().__init__()
         self.client_token = None
         self.embedding_client = EmbeddingModel()
-        self.index_client = None
+        self.index_client = Pinecone(api_key="********-****-****-****-************")
+        self.index = self.index_client.Index("mingzhe")
         
-    def create(self, data) -> Any:        
+    def create(self, data, namespace='default') -> Any:        
         instances = list()
         
         for instance in data['instances']:
@@ -51,10 +56,21 @@ class PersonalIndex(InformationRetrieval):
                 "metadata": instance['metadata'],
             }
             
-        self.index_client.upsert(
-            vectors=instances,
-            namespace= "default"
+        self.index.upsert(
+            vectors = instances,
+            namespace = namespace
         )
+    
+    def query(self, data, top_k=3, filter={}, namespace='default'):
+        results = self.index.query(
+            namespace = namespace,
+            vector = self.embedding_client.get_embedding(data),
+            top_k = top_k,
+            include_values = True,
+            include_metadata = True,
+            filter = filter,
+        )
+        return results
         
     
     
