@@ -38,6 +38,7 @@ class PersonalIndex(InformationRetrieval):
     def __init__(self) -> None:
         super().__init__()
         self.client_token = None
+        self.embedding_client = EmbeddingModel()
         self.index_client = None
         
     def create(self, data) -> Any:        
@@ -46,8 +47,8 @@ class PersonalIndex(InformationRetrieval):
         for instance in data['instances']:
             instances += {
                 "id": "vec1", 
-                "values": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], 
-                "metadata": {"genre": "drama"},
+                "values": self.embedding_client.get_embedding(instance['content']), 
+                "metadata": instance['metadata'],
             }
             
         self.index_client.upsert(
